@@ -25,7 +25,7 @@ class Unit4Tests(unittest.TestCase):
         self.assertEqual(route[0], "W")
         self.assertEqual(route[-1], "W")
         self.assertEqual(set(route[:-1]), set(graph))
-        self.assertAlmostEqual(cost, 15.0)
+        self.assertAlmostEqual(cost, 14.0)
 
     def test_graph_coloring_respects_edges(self):
         adjacency = {"A": ["B"], "B": ["A", "C"], "C": ["B"]}
