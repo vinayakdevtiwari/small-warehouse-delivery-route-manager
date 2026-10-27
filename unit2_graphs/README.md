@@ -1,14 +1,26 @@
-# Unit 2: Graph Representations
+# Unit 2: Graphs
 
-Both graphs accept any hashable location label and non-negative numeric edge
-weights (for example kilometres or a calculated delivery cost). `directed=False`
-models two-way roads; `directed=True` models one-way roads.
+The graph modules use simulated locations and non-negative route distances.
 
-- `AdjacencyMatrixGraph`: O(V²) space, O(1) route lookup; a practical choice
-  when the small network is fairly dense.
-- `AdjacencyListGraph`: O(V+E) space and O(degree) neighbour scan; a practical
-  choice when only some pairs have roads/routes.
+- `AdjacencyMatrixGraph`: O(V²) storage; O(1) route/weight lookup.
+- `AdjacencyListGraph`: O(V+E) storage; efficient neighbour iteration for a sparse delivery network.
+- `bfs.py`, `dfs.py`, `connected_components.py`, `spanning_tree.py`, `prim.py`, `kruskal.py`, `transitive_closure.py`, `dijkstra.py`, `bellman_ford.py`, `floyd_warshall.py`: standalone graph algorithm implementations and simulated verification examples.
 
-Future algorithms can use `vertices`, `neighbours(vertex)`, `edges()`, and
-`weight(source, destination)`. BFS, DFS, Dijkstra, Prim, Kruskal,
-Bellman-Ford, and Floyd-Warshall have not yet been implemented.
+## Integration in the application
+
+The Streamlit app uses `AdjacencyListGraph` and `dijkstra_shortest_path` in the actual order flow. When an order is placed, it checks which warehouses have enough stock, calculates a route to the destination from each eligible warehouse, selects the lowest-distance eligible option, and reserves stock inside a SQLite transaction.
+
+The Route Planner tab also supports a small multi-stop closed tour: Dijkstra computes shortest-path distances between selected stops, then the Unit 4 Branch & Bound TSP module optimizes their visiting order.
+
+Other graph algorithms remain reusable DSA demonstrations. Prim and Kruskal compute minimum spanning trees (network design), not source-to-destination shortest paths. Bellman-Ford is included for negative-edge/negative-cycle study; actual route distances should remain non-negative.
+
+## Running examples
+
+Run from the repository root:
+
+```powershell
+python -m unit2_graphs.adjacency_list
+python -m unit2_graphs.adjacency_matrix
+python -m unit2_graphs.dijkstra
+python -m unittest discover -s tests -v
+```
