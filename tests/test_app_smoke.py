@@ -14,7 +14,8 @@ class AppSmokeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             database.DB_PATH = Path(tmp) / "smoke.sqlite3"
             try:
-                result = AppTest.from_file("app.py", default_timeout=30).run()
+                app_path = Path(__file__).resolve().parents[1] / "app.py"
+                result = AppTest.from_file(str(app_path), default_timeout=30).run()
                 self.assertEqual(len(result.exception), 0, "\n".join(str(e.value) for e in result.exception))
                 self.assertTrue(any("WarehouseFlow" in str(item.value) for item in result.markdown))
             finally:
