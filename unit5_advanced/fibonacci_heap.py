@@ -103,6 +103,10 @@ class FibonacciHeap(Generic[T]):
             root.left = root.right = root
         degree_table: list[Optional[_Node[T]]] = [None] * (self.size.bit_length() * 2 + 4)
         for root in roots:
+            # An earlier consolidation may already have linked this root under
+            # another root; it is no longer a top-level tree.
+            if root.parent is not None:
+                continue
             x = root
             d = x.degree
             while d >= len(degree_table):
