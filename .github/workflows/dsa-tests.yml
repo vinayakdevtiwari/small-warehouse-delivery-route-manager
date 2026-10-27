@@ -16,7 +16,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install application dependencies
+        run: python -m pip install -r requirements.txt
       - name: Compile application and DSA modules
         run: python -m compileall -q app.py warehouse_app unit1_trees unit2_graphs unit3_dynamic_programming unit4_backtracking unit5_advanced
-      - name: Run Unit 4 and Unit 5 tests
+      - name: Run algorithm and application tests
         run: python -m unittest discover -s tests -v
