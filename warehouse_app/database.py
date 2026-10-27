@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -35,7 +36,7 @@ def connect() -> sqlite3.Connection:
 
 def init_db() -> None:
     """Create tables and seed small simulated data once."""
-    with connect() as db:
+    with closing(connect()) as db:
         db.executescript("""
             CREATE TABLE IF NOT EXISTS locations (
                 id TEXT PRIMARY KEY,
@@ -152,7 +153,7 @@ def init_db() -> None:
 
 
 def list_locations(kind: str | None = None) -> list[dict[str, Any]]:
-    with connect() as db:
+    with closing(connect()) as db:
         if kind:
             rows = db.execute("SELECT * FROM locations WHERE kind=? ORDER BY name", (kind,)).fetchall()
         else:
@@ -161,19 +162,19 @@ def list_locations(kind: str | None = None) -> list[dict[str, Any]]:
 
 
 def list_warehouses() -> list[dict[str, Any]]:
-    with connect() as db:
+    with closing(connect()) as db:
         rows = db.execute("SELECT * FROM warehouses ORDER BY id").fetchall()
         return [dict(row) for row in rows]
 
 
 def list_products() -> list[dict[str, Any]]:
-    with connect() as db:
+    with closing(connect()) as db:
         rows = db.execute("SELECT * FROM products ORDER BY id").fetchall()
         return [dict(row) for row in rows]
 
 
 def get_product(product_id: int) -> dict[str, Any] | None:
-    with connect() as db:
+    with closing(connect()) as db:
         row = db.execute("SELECT * FROM products WHERE id=?", (product_id,)).fetchone()
         return dict(row) if row else None
 
@@ -189,12 +190,12 @@ def get_stock(product_id: int | None = None) -> list[dict[str, Any]]:
         query += " WHERE p.id=?"
         params = (product_id,)
     query += " ORDER BY w.id,p.id"
-    with connect() as db:
+    with closing(connect()) as db:
         return [dict(r) for r in db.execute(query, params).fetchall()]
 
 
 def list_routes() -> list[dict[str, Any]]:
-    with connect() as db:
+    with closing(connect()) as db:
         return [dict(r) for r in db.execute(
             """SELECT r.source_id, a.name AS source, r.destination_id, b.name AS destination,
                       r.distance
@@ -205,7 +206,7 @@ def list_routes() -> list[dict[str, Any]]:
 
 def build_graph() -> AdjacencyListGraph[str]:
     graph: AdjacencyListGraph[str] = AdjacencyListGraph(directed=False)
-    with connect() as db:
+    with closing(connect()) as db:
         vertices = db.execute("SELECT id FROM locations ORDER BY id").fetchall()
         routes = db.execute("SELECT source_id,destination_id,distance FROM routes").fetchall()
     for row in vertices:
@@ -232,7 +233,7 @@ def list_orders(status: str | None = None, warehouse_id: int | None = None) -> l
     if where:
         query += " WHERE " + " AND ".join(where)
     query += " ORDER BY o.created_at DESC"
-    with connect() as db:
+    with closing(connect()) as db:
         return [dict(r) for r in db.execute(query, params).fetchall()]
 
 
@@ -246,7 +247,7 @@ def place_order(product_id: int, quantity: int, destination_id: str, priority: i
     if destination_id not in graph.vertices:
         raise ValueError("Select a valid delivery destination.")
 
-    with connect() as db:
+    with closing(connect()) as db:
         db.execute("BEGIN IMMEDIATE")
         try:
             product = db.execute("SELECT * FROM products WHERE id=?", (product_id,)).fetchone()
@@ -304,7 +305,7 @@ def place_order(product_id: int, quantity: int, destination_id: str, priority: i
 
 def transition_order(order_id: str, target_status: str) -> None:
     allowed = {"Confirmed": {"Dispatched", "Cancelled"}, "Dispatched": {"Delivered"}}
-    with connect() as db:
+    with closing(connect()) as db:
         db.execute("BEGIN IMMEDIATE")
         try:
             row = db.execute("SELECT * FROM orders WHERE id=?", (order_id,)).fetchone()
@@ -384,7 +385,7 @@ def add_stock(warehouse_id: int, product_id: int, delta: int) -> int:
     """Adjust inventory safely; negative adjustments cannot exceed available stock."""
     if delta == 0:
         raise ValueError("Stock adjustment cannot be zero.")
-    with connect() as db:
+    with closing(connect()) as db:
         db.execute("BEGIN IMMEDIATE")
         try:
             row = db.execute(
@@ -415,7 +416,7 @@ def add_product(product_id: int, name: str, category: str, unit_weight: int, uni
         raise ValueError("Weight must be positive and value cannot be negative.")
     if any(q < 0 for q in initial_stock.values()):
         raise ValueError("Initial stock cannot be negative.")
-    with connect() as db:
+    with closing(connect()) as db:
         db.execute("BEGIN IMMEDIATE")
         try:
             db.execute(
@@ -437,7 +438,7 @@ def add_product(product_id: int, name: str, category: str, unit_weight: int, uni
 
 
 def dashboard_metrics() -> dict[str, Any]:
-    with connect() as db:
+    with closing(connect()) as db:
         products = db.execute("SELECT COUNT(*) FROM products").fetchone()[0]
         warehouses = db.execute("SELECT COUNT(*) FROM warehouses").fetchone()[0]
         locations = db.execute("SELECT COUNT(*) FROM locations").fetchone()[0]
